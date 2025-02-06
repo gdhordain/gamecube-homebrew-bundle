@@ -7,6 +7,7 @@ on:
         type: choice
         options:
           - swiss
+          - gcmm
 
 jobs:
   setup:
@@ -22,6 +23,10 @@ jobs:
             "swiss")
             echo "OWNER=emukidid" >> $GITHUB_OUTPUT
             echo "REPOSITORY=swiss-gc" >> $GITHUB_OUTPUT
+            ;;
+            "gcmm")
+            echo "OWNER=suloku" >> $GITHUB_OUTPUT
+            echo "REPOSITORY=gcmm" >> $GITHUB_OUTPUT
             ;;
             *)
             exit 1
@@ -71,13 +76,25 @@ jobs:
           echo "${{needs.check-for-update.outputs.RELEASE}}" > build/releases/${{ github.event.inputs.name }}-release.txt
           
           mkdir tmp
-          if [[ "swiss" = "${{ github.event.inputs.name }}" ]]
-          then
+          
+          case "${{ github.event.inputs.name }}" in
+            "swiss")
             ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/(\/v[0-9.]+(r[0-9]+))$/\1\/swiss_\2.7z/')
             curl -L $ARCHIVE -o tmp/swiss.7z
             7z e tmp/swiss.7z swiss_r*/DOL/swiss_r*.dol
             mv swiss_r*.dol build/AUTOEXEC.DOL
-          fi
+            ;;
+            "gcmm")
+            ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/(\/v[0-9.]+)$/\1\/gcmm_\1.zip/')
+            curl -L $ARCHIVE -o tmp/gcmm.zip
+            unzip -j tmp/gcmm.zip 'gcmm_*/gamecube/gcmm_GC.dol'
+            mv gcmm_GC.dol build/gcmm_GC.dol
+            ;;
+            *)
+            exit 1
+            ;;
+          esac
+          
           rm -rf tmp
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
