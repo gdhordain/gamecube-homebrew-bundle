@@ -8,6 +8,7 @@ on:
         options:
           - swiss
           - gcmm
+          - cleanrip
 
 jobs:
   setup:
@@ -27,6 +28,10 @@ jobs:
             "gcmm")
             echo "OWNER=suloku" >> $GITHUB_OUTPUT
             echo "REPOSITORY=gcmm" >> $GITHUB_OUTPUT
+            ;;
+            "cleanrip")
+            echo "OWNER=emukidid" >> $GITHUB_OUTPUT
+            echo "REPOSITORY=cleanrip" >> $GITHUB_OUTPUT
             ;;
             *)
             exit 1
@@ -70,6 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: setup 7-Zip
+        if: ${{ github.event.inputs.name == 'swiss' }}
         uses: milliewalky/setup-7-zip@v2
       - id: update-component
         run: |
@@ -85,12 +91,18 @@ jobs:
             7z e tmp/swiss.7z swiss_r*/DOL/swiss_r*.dol
             mv swiss_r*.dol build/AUTOEXEC.DOL
             ;;
+          
             "gcmm")
             ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/\/([0-9.]+)$/\/\1\/gcmm_\1.zip/')
             curl -L $ARCHIVE -o tmp/gcmm.zip
             ls -l tmp
             unzip -j tmp/gcmm.zip 'gcmm_*/gamecube/gcmm_GC.dol'
             mv gcmm_GC.dol build/gcmm_GC.dol
+            ;;
+          
+            "cleanrip")
+            ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/$/\/cleanrip-gc.dol/')
+            curl -L $ARCHIVE -o build/cleanrip-gc.dol
             ;;
             *)
             exit 1
@@ -101,5 +113,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
+          title: Update ${{ github.event.inputs.name }} component
           commit-message: Update ${{ github.event.inputs.name }} component
           branch: update-${{ github.event.inputs.name }}-component
