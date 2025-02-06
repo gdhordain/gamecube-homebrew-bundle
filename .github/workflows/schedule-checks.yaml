@@ -1,0 +1,23 @@
+name: Schedule checks for update
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * 1'
+
+jobs:
+  check-cleanrip-for-update:
+    uses: gdhordain/gamecube-homebrew-bundle/.github/workflows/check-for-update.yaml@main
+    with:
+      name: cleanrip
+#  check-gbi-for-update:
+#    uses: gdhordain/gamecube-homebrew-bundle/.github/workflows/check-for-update.yaml@main
+#    with:
+#      name: gbi
+  check-gcmm-for-update:
+    uses: gdhordain/gamecube-homebrew-bundle/.github/workflows/check-for-update.yaml@main
+    with:
+      name: gcmm
+  check-swiss-for-update:
+    uses: gdhordain/gamecube-homebrew-bundle/.github/workflows/check-for-update.yaml@main
+    with:
+      name: swiss

@@ -1,5 +1,10 @@
 name: Check for update
 on:
+  workflow_call:
+    inputs:
+      name:
+        description: "Name of the component"
+        type: string
   workflow_dispatch:
     inputs:
       name:
@@ -21,7 +26,7 @@ jobs:
     steps:
       - id: setup
         run: |
-          case "${{ github.event.inputs.name }}" in
+          case "${{ inputs.name }}" in
             "swiss")
             echo "OWNER=emukidid" >> $GITHUB_OUTPUT
             echo "REPOSITORY=swiss-gc" >> $GITHUB_OUTPUT
@@ -37,6 +42,7 @@ jobs:
             "gbi")
             ;;
             *)
+            echo "Invalid component name ${{ inputs.name }}"
             exit 1
             ;;
           esac
@@ -48,12 +54,12 @@ jobs:
       RELEASE: ${{ steps.check-for-update.outputs.RELEASE }}
     steps:
       - uses: actions/checkout@v4
-        if: ${{ github.event.inputs.name != 'gbi' }}
+        if: ${{ inputs.name != 'gbi' }}
         with:
           sparse-checkout: |
             build/releases
       - id: component-release
-        if: ${{ github.event.inputs.name != 'gbi' }}
+        if: ${{ inputs.name != 'gbi' }}
         uses: pozetroninc/github-action-get-latest-release@master
         with:
           owner: ${{ needs.setup.outputs.OWNER }}
@@ -61,22 +67,22 @@ jobs:
           excludes: prerelease, draft
       - id: check-for-update
         run: |
-          if [[ "${{ github.event.inputs.name }}" = 'gbi' ]]
+          if [[ "${{ inputs.name }}" = 'gbi' ]]
           then
             echo "RELEASE=bypass_gbi" >> $GITHUB_OUTPUT
             exit 0
           fi
           
           NEW="https://github.com/${{ needs.setup.outputs.OWNER }}/${{ needs.setup.outputs.REPOSITORY }}/releases/tag/${{ steps.component-release.outputs.release }}"
-          CURRENT=$(cat build/releases/${{ github.event.inputs.name }}-release.txt)
+          CURRENT=$(cat build/releases/${{ inputs.name }}-release.txt)
           
           if [[ "" != "$NEW" && "$NEW" != "$CURRENT" ]]; then
-            echo "New ${{ github.event.inputs.name }} release available: ${{ steps.component-release.outputs.release }}"
-            echo $NEW > build/releases/${{ github.event.inputs.name }}-release.txt
+            echo "New ${{ inputs.name }} release available: ${{ steps.component-release.outputs.release }}"
+            echo $NEW > build/releases/${{ inputs.name }}-release.txt
             echo "RELEASE=$NEW" >> $GITHUB_OUTPUT
             echo "TAG=${{ steps.component-release.outputs.release }}" >> $GITHUB_OUTPUT
           else
-            echo "No new ${{ github.event.inputs.name }} release available"
+            echo "No new ${{ inputs.name }} release available"
           fi
   update-component:
     name: Update component
@@ -86,15 +92,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: setup 7-Zip
-        if: ${{ github.event.inputs.name == 'swiss' }}
+        if: ${{ inputs.name == 'swiss' }}
         uses: milliewalky/setup-7-zip@v2
       - id: update-component
         run: |
-          echo "${{ needs.check-for-update.outputs.RELEASE }}" > build/releases/${{ github.event.inputs.name }}-release.txt
+          echo "${{ needs.check-for-update.outputs.RELEASE }}" > build/releases/${{ inputs.name }}-release.txt
           
           mkdir tmp
           
-          case "${{ github.event.inputs.name }}" in
+          case "${{ inputs.name }}" in
             "swiss")
             ARCHIVE=$(echo "${{ needs.check-for-update.outputs.RELEASE }}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/(\/v[0-9.]+(r[0-9]+))$/\1\/swiss_\2.7z/')
             curl -L $ARCHIVE -o tmp/swiss.7z
@@ -120,7 +126,7 @@ jobs:
             cd tmp
             curl -OJvvv https://files.extremscorner.org/gamecube/apps/gbi/latest
             ls -l
-            ls | sed -r -e 's,^,https://files.extremscorner.org/gamecube/apps/gbi/,' -e 's/\/gbi-([0-9]+).zip$/\/\1/' > ../build/releases/${{ github.event.inputs.name }}-release.txt
+            ls | sed -r -e 's,^,https://files.extremscorner.org/gamecube/apps/gbi/,' -e 's/\/gbi-([0-9]+).zip$/\/\1/' > ../build/releases/${{ inputs.name }}-release.txt
             unzip -j gbi-*.zip 'apps/gbi/gbi.dol'
             mv gbi.dol ../build/gbi.dol
             cd ..
@@ -135,6 +141,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
-          title: Update ${{ github.event.inputs.name }} component
-          commit-message: Update ${{ github.event.inputs.name }} component
-          branch: update-${{ github.event.inputs.name }}-component
+          title: Update ${{ inputs.name }} component
+          commit-message: Update ${{ inputs.name }} component
+          branch: update-${{ inputs.name }}-component
