@@ -81,12 +81,14 @@ jobs:
             "swiss")
             ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/(\/v[0-9.]+(r[0-9]+))$/\1\/swiss_\2.7z/')
             curl -L $ARCHIVE -o tmp/swiss.7z
+            ls -l tmp
             7z e tmp/swiss.7z swiss_r*/DOL/swiss_r*.dol
             mv swiss_r*.dol build/AUTOEXEC.DOL
             ;;
             "gcmm")
             ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/(\/v[0-9.]+)$/\1\/gcmm_\1.zip/')
             curl -L $ARCHIVE -o tmp/gcmm.zip
+            ls -l tmp
             unzip -j tmp/gcmm.zip 'gcmm_*/gamecube/gcmm_GC.dol'
             mv gcmm_GC.dol build/gcmm_GC.dol
             ;;
