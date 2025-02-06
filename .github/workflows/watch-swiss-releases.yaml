@@ -1,0 +1,48 @@
+name: Watch Swiss releases
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Watch Swiss releases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            build/releases
+      - id: swiss
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          owner: emukidid
+          repo: swiss-gc
+          excludes: prerelease, draft
+      - id: check-for-update
+        run: |
+          NEW="https://github.com/emukidid/swiss-gc/releases/tag/${{steps.swiss.outputs.release}}"
+          CURRENT=$(cat build/releases/swiss-release.txt)
+          
+          if [[ "" != "$NEW" && "$NEW" != "$CURRENT" ]]; then
+            echo "New Swiss release available: ${{steps.swiss.outputs.release}}"
+          fi
+#      - id: gbi
+#        description: "Get latest release of GameBoy Interface"
+#        uses: pozetroninc/github-action-get-latest-release@master
+#        with:
+#          owner: extremscorner
+#          repo: emgba
+#          excludes: prerelease, draft
+#      - id: cleanrip
+#        description: "Get latest release of Cleanrip"
+#        uses: pozetroninc/github-action-get-latest-release@master
+#        with:
+#          owner: emukidid
+#          repo: cleanrip
+#          excludes: prerelease, draft
+#      - id: gcmm
+#        description: "Get latest release of GameCube Memory Manager"
+#        uses: pozetroninc/github-action-get-latest-release@master
+#        with:
+#          owner: suloku
+#          repo: gcmm
+#          excludes: prerelease, draft
