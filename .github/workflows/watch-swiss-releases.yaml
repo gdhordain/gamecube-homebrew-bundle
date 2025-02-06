@@ -14,9 +14,11 @@ on:
         default: "swiss-gc"
 
 jobs:
-  build:
+  check-for-update:
     name: Check for update
     runs-on: ubuntu-latest
+    outputs:
+      RELEASE: ${{ steps.check-for-update.outputs.RELEASE }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,25 +37,29 @@ jobs:
           
           if [[ "" != "$NEW" && "$NEW" != "$CURRENT" ]]; then
             echo "New ${{ github.event.inputs.owner }}/${{ github.event.inputs.component }} release available: ${{steps.swiss.outputs.release}}"
+            echo $NEW > build/releases/swiss-release.txt
+            echo "RELEASE=$NEW" >> $GITHUB_OUTPUT
           fi
-#      - id: gbi
-#        description: "Get latest release of GameBoy Interface"
-#        uses: pozetroninc/github-action-get-latest-release@master
-#        with:
-#          owner: extremscorner
-#          repo: emgba
-#          excludes: prerelease, draft
-#      - id: cleanrip
-#        description: "Get latest release of Cleanrip"
-#        uses: pozetroninc/github-action-get-latest-release@master
-#        with:
-#          owner: emukidid
-#          repo: cleanrip
-#          excludes: prerelease, draft
-#      - id: gcmm
-#        description: "Get latest release of GameCube Memory Manager"
-#        uses: pozetroninc/github-action-get-latest-release@master
-#        with:
-#          owner: suloku
-#          repo: gcmm
-#          excludes: prerelease, draft
+  update-component:
+    name: Update component
+    runs-on: ubuntu-latest
+    needs: check-for-update
+    if: ${{ needs.check-for-update.outputs.RELEASE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: setup 7-Zip
+        uses: milliewalky/setup-7-zip@v2
+      - id: update-component
+        # https://github.com/emukidid/swiss-gc/releases/tag/v0.6r1788
+        # https://github.com/emukidid/swiss-gc/releases/download/v0.6r1788/swiss_r1788.7z
+        run: |
+          echo "${{needs.check-for-update.outputs.RELEASE}}" > build/releases/swiss-release.txt
+          
+          mkdir tmp
+          ARCHIVE=$(echo "${{needs.check-for-update.outputs.RELEASE}}" | sed -r 's/\/tag\//\/download\//' | sed -r 's/(\/v[0-9.]+(r[0-9]+))$/\1\/swiss_\2.7z/')
+          curl -L $ARCHIVE -o tmp/swiss.7z
+          7z e tmp/swiss.7z swiss_r*/DOL/swiss_r*.dol
+          mv swiss_r*.dol build/AUTOEXEC.DOL
+          rm -rf tmp
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
