@@ -118,7 +118,7 @@ jobs:
             ;;
           
             "cleanrip")
-            ARCHIVE=$(echo "${{ needs.check-for-update.outputs.RELEASE }}" | sed -r -e 's/\/tag\//\/download\//' -e 's/$/\/cleanrip-gc.dol/')
+            ARCHIVE=$(echo "${{ needs.check-for-update.outputs.RELEASE }}" | sed -r -e 's/\/tag\//\/download\//' -e 's/$/\/CleanRip-v${{ needs.check-for-update.outputs.TAG }}-gc.zip/')
             curl -L $ARCHIVE -o build/cleanrip-gc.dol
             ;;
           
